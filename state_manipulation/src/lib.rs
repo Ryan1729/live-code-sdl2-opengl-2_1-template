@@ -361,19 +361,22 @@ fn labeled_button(
         },
     );
 
-    match button_outcome.draw_state {
-        Pressed => {
-            let texture_spec = (0.0, 0.0, 1.0, 1.0, 1, 0.0, 0.0, 0.0, 0.0);
-            (p.draw_textured_poly_with_matrix)(camera, 6, texture_spec, 0);
-        }
-        Hover => {
-            let texture_spec = (0.0, 0.0, 1.0, 1.0, 0, 0.0, 0.0, 0.0, 0.0);
-            (p.draw_textured_poly_with_matrix)(camera, 6, texture_spec, 0);
-        }
-        Inactive => {
-            (p.draw_poly_with_matrix)(camera, 6, 0);
-        }
-    }
+    let (fill, outline) = match button_outcome.draw_state {
+        Pressed => (
+            (32.0 / 255.0, 32.0 / 255.0, 63.0 / 255.0, 1.0),
+            (192.0 / 255.0, 192.0 / 255.0, 48.0 / 255.0, 1.0),
+        ),
+        Hover => (
+            (63.0 / 255.0, 63.0 / 255.0, 128.0 / 255.0, 1.0),
+            (192.0 / 255.0, 192.0 / 255.0, 48.0 / 255.0, 1.0),
+        ),
+        Inactive => (
+            (63.0 / 255.0, 63.0 / 255.0, 128.0 / 255.0, 1.0),
+            (0.0, 0.0, 0.0, 0.0),
+        ),
+    };
+
+    (p.draw_poly_with_matrix_and_colours)(camera, fill, outline, 6, 0);
 
     let font_scale = if label.len() > 8 { 18.0 } else { 24.0 };
 

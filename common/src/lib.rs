@@ -12,6 +12,7 @@ pub fn random_string(rng: &mut StdRng) -> String {
 pub struct Platform {
     pub draw_poly: fn(f32, f32, usize, usize),
     pub draw_poly_with_matrix: fn([f32; 16], usize, usize),
+    pub draw_poly_with_matrix_and_colours: fn([f32; 16], rgba, rgba, usize, usize),
     pub draw_textured_poly: fn(f32, f32, usize, TextureSpec, usize),
     pub draw_textured_poly_with_matrix: fn([f32; 16], usize, TextureSpec, usize),
     pub draw_text: fn(&str, (f32, f32), f32, f32, [f32; 4], usize),
@@ -36,6 +37,10 @@ pub struct State {
     pub layer_on: bool,
     pub layer_alpha: f32,
 }
+
+//Rgba and RGBA both seem worse than this
+#[allow(non_camel_case_types)]
+pub type rgba = (f32, f32, f32, f32);
 
 pub struct Polygon {
     pub x: f32,
