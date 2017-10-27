@@ -2,6 +2,8 @@
 
 This is a template crate to make it easy to start a new project using SDL2 and OpenGL 2.1, with live code reloading.
 
+For a simpler example program which support live reloading see [here](https://github.com/Ryan1729/tiny-live-code-example/).
+
 Similarly to the way [live-code-bear-lib-terminal-template](https://github.com/Ryan1729/live-code-bear-lib-terminal-template) turned out, the plan is to use this template in projects, then backport generally useful additions to the `Platform` struct, expanding that API based on actuall usage, rather than blind guessing.
 
 ## Compiling release mode
