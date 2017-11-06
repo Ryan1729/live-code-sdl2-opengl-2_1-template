@@ -1,6 +1,6 @@
 use std::env;
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Output};
 use std::fs;
 
 fn main() {
@@ -76,11 +76,21 @@ fn main() {
                          open the {} build.rs and follow the rlib number instructions.",
                         crate_name
                     );
-                    panic!("\n\n{}\n\n {:?}", message, output)
+                    panic!("\n\n{}\n\n{}", message, nice_output_string(output))
                 }
                 Some(0) => {}
-                _ => panic!("{:?}", output),
+                _ => panic!("{}", nice_output_string(output)),
             },
         }
+    }
+}
+
+fn nice_output_string(output: Output) -> String {
+    unsafe {
+        format!(
+            "{}\n\n{}",
+            std::str::from_utf8_unchecked(&output.stdout),
+            std::str::from_utf8_unchecked(&output.stderr)
+        )
     }
 }
