@@ -102,6 +102,7 @@ impl UIContext {
 
 pub type TextureSpec = (f32, f32, f32, f32, i32, f32, f32, f32, f32);
 
+#[derive(Clone, Copy, Debug)]
 pub struct ProjectionSpec {
     pub top: f32,
     pub bottom: f32,
@@ -112,13 +113,57 @@ pub struct ProjectionSpec {
     pub projection: Projection,
 }
 
+impl ProjectionSpec {
+    pub fn inverse(&self) -> Self {
+        ProjectionSpec {
+            top: self.top,
+            bottom: self.bottom,
+            left: self.left,
+            right: self.right,
+            near: self.near,
+            far: self.far,
+            projection: self.projection.inverse(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
 pub enum Projection {
     Perspective,
+    InversePerspective,
     Orthographic,
+    InverseOrthographic,
 }
 use Projection::*;
 
+impl Projection {
+    pub fn inverse(&self) -> Self {
+        match *self {
+            Perspective => InversePerspective,
+            InversePerspective => Perspective,
+            Orthographic => InverseOrthographic,
+            InverseOrthographic => Orthographic,
+        }
+    }
+}
+
 // see http://www.scratchapixel.com perspecitve and orthographic projection sections
+
+//inverses found through wolframalpha, accounting for the openGL transposition
+// invert {
+//{(2*n)/(r-l),0,0,0},
+//{0,(2*n)/(t-b),0,0},
+//{(r+l)/(r-l),(t+b)/(t-b),-(f+n)/(f-n),-1},
+//{0,0,-(2*f * n)/(f-n),0}
+//}
+
+// invert {
+//{(2)/(r-l),0,0,0},
+//{0,2/(t-b),0,0},
+//{0,0,-2/(f-n),0},
+//{-(r + l)/(r - l),-(t+b)/(t-b),-(f + n)/(f-n),1}
+//}
+
 pub fn get_projection(spec: &ProjectionSpec) -> [f32; 16] {
     match spec.projection {
         Perspective => {
@@ -144,6 +189,29 @@ pub fn get_projection(spec: &ProjectionSpec) -> [f32; 16] {
                 0.0,
             ]
         }
+        InversePerspective => {
+            [
+                (spec.right - spec.left) / (2.0 * spec.near),
+                0.0,
+                0.0,
+                (spec.right + spec.left) / (2.0 * spec.near),
+                //
+                0.0,
+                (spec.top - spec.bottom) / (2.0 * spec.near),
+                0.0,
+                (spec.top + spec.bottom) / (2.0 * spec.near),
+                //
+                0.0,
+                0.0,
+                0.0,
+                -1.0,
+                //
+                0.0,
+                0.0,
+                (spec.near - spec.far) / (2.0 * spec.far * spec.near),
+                (spec.near + spec.far) / (2.0 * spec.far * spec.near),
+            ]
+        }
         Orthographic => {
             [
                 2.0 / (spec.right - spec.left),
@@ -160,6 +228,29 @@ pub fn get_projection(spec: &ProjectionSpec) -> [f32; 16] {
                 0.0,
                 -2.0 / (spec.far - spec.near),
                 -(spec.far + spec.near) / (spec.far - spec.near),
+                //
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+            ]
+        }
+        InverseOrthographic => {
+            [
+                (spec.right - spec.left) / 2.0,
+                0.0,
+                0.0,
+                (spec.left + spec.right) / 2.0,
+                //
+                0.0,
+                (spec.top - spec.bottom) / 2.0,
+                0.0,
+                (spec.top + spec.bottom) / 2.0,
+                //
+                0.0,
+                0.0,
+                (spec.near - spec.far) / 2.0,
+                -(spec.far + spec.near) / 2.0,
                 //
                 0.0,
                 0.0,
@@ -196,6 +287,7 @@ extern crate quickcheck;
 #[cfg(test)]
 mod mat4x4_tests {
     use ::*;
+    use rand::Rand;
 
     impl Rand for ProjectionSpec {
         fn rand<R: Rng>(rng: &mut R) -> Self {
@@ -210,6 +302,46 @@ mod mat4x4_tests {
             }
         }
     }
+
+    pub trait AllValues {
+        fn all_values() -> Vec<Self>
+        where
+            Self: std::marker::Sized;
+    }
+
+    macro_rules! all_values_rand_impl {
+        ($($t:ty)*) => ($(
+            impl Rand for $t {
+                fn rand<R: Rng>(rng: &mut R) -> Self {
+                    let values = Self::all_values();
+
+                    let len = values.len();
+
+                    if len == 0 {
+                        panic!("Cannot pick a random value because T::all_values()\
+     returned an empty vector!")
+                    } else {
+                        let i = rng.gen_range(0, len);
+
+                        values[i]
+                    }
+                }
+            }
+        )*)
+    }
+
+    impl AllValues for Projection {
+        fn all_values() -> Vec<Projection> {
+            vec![
+                Perspective,
+                InversePerspective,
+                Orthographic,
+                InverseOrthographic,
+            ]
+        }
+    }
+
+    all_values_rand_impl!(Projection);
 
     impl quickcheck::Arbitrary for ProjectionSpec {
         fn arbitrary<G: quickcheck::Gen>(g: &mut G) -> ProjectionSpec {
